@@ -7,9 +7,7 @@ load('data.csv')
 y = data(:,2);
 X = data(:,3:end);
 
-[train, hold, val] = trainholdval(X, 300, 100);
+[train, hold, val] = trainholdval(X, 300, 0);
 
 [U,S,V] = svd(X,'econ');
-
-
 
