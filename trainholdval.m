@@ -1,5 +1,8 @@
 function [ trainInd, holdInd, valInd ] = trainholdval(X, trainNum, holdNum)
 %trainholdval Returns a set of trainInd, holdInd, valInd for data set.
+% 
+%   [ trainInd, holdInd, valInd ] = trainholdval(X, trainNum, holdNum)
+% 
 %   The number of training and holdout sets are put into the function,
 %   which then returns randomly generated exclusive indices for each set.
 %   The remaining indices not specified by the number of train or hold our
