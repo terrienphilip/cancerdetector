@@ -1,4 +1,4 @@
-function [ TP TN FP FN ] = analysis( y, yhat, yes, no )
+function [ TP, TN, FP, FN ] = analysis( y, yhat, yes, no )
 %analysis Finds true positives, true negatives, false positives, and false
 %negatives given yhat and y. Specify yes as integer for positive
 %classification and no for integer as negative classification
