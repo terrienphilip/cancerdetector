@@ -18,16 +18,17 @@ X = (X - mean(X,1))./std(X,0,1);
 X = [ones(size(X,1),1), X];
 
 %% Linear Regression w/ Tikhonov Regularization by Stochastic Gradient Descent
-
-% placeholders for average accuracy, sensitivity, and specificity
-accurLin = zeros(1,100);
-senseLin = zeros(1,100);
-specLin = zeros(1,100);
-
 tow = 1e-4;       % descent step size
 lamda = 0.1;    % regularization factor
 epsilon = 1e-6; % threshold for convergance
 aveIter = 100;    % number of iterations to average results
+
+% placeholders for average accuracy, sensitivity, and specificity
+accurLin = zeros(1,aveIter);
+senseLin = zeros(1,aveIter);
+specLin = zeros(1,aveIter);
+pprLin = zeros(1,aveIter);
+nprLin = zeros(1,aveIter);
 
 for aveInd = 1:aveIter
     % randomly select training and validation set
@@ -70,23 +71,26 @@ for aveInd = 1:aveIter
     accurLin(aveInd) = (TP + TN) / (TP + TN + FP + FN);
     senseLin(aveInd) = TP / (TP + FN);
     specLin(aveInd) = TN / (TN + FP);
+    pprLin(aveInd) = TP / (TP + FP);
+    nprLin(aveInd) = TN / (TN + FN);
 end
 
 % Linear Regression stat averages
 ['Accuracy Linear = ' num2str(mean(accurLin))]
 ['Sensitivity Linear = ' num2str(mean(senseLin))]
 ['Specicity Linear = ' num2str(mean(specLin))]
+['PPR Linear = ' num2str(mean(pprLin))]
+['NPR Linear = ' num2str(mean(nprLin))]
 
 %% Re-proccess Output
 % change y values for benign tumor from -1 to 0
 y(y==-1) = 0;
 
 %% Logistic Regression Using Stochastic Gradient Descent
-
 %% Learn the Best Thresholds
 tow = 1e-4;       % descent step size
 epsilon = 1e-7;   % threshold for convergance
-aveIter = 100;    % number of iterations to average results
+aveIter = 10;    % number of iterations to average results
 
 % place holders for stats and percent of confident classifications of lower
 % threshold
@@ -95,7 +99,7 @@ npr = zeros(aveIter, length(0:0.001:0.5));
 classPercLow = zeros(aveIter, length(0:0.001:0.5));
 
 % place holders for stats and percent of confident classifications of upper
-% threshold 
+% threshold
 accurUp = zeros(aveIter, length(0.5:0.001:1));
 ppr = zeros(aveIter, length(0.5:0.001:1));
 classPercUp = zeros(aveIter, length(0.5:0.001:1));
@@ -148,7 +152,7 @@ for aveInd = 1:aveIter
         classPercLow(aveInd, ind) = length(ypredict)/nnz(y(val)==0);
         
         ind = ind + 1;
-    end   
+    end
     
     % Learn the Best Upper Threshold Bound
     lowThresh = 0;
@@ -166,7 +170,7 @@ for aveInd = 1:aveIter
         classPercUp(aveInd, ind) = length(ypredict)/nnz(y(val)==1);
         
         ind = ind + 1;
-    end   
+    end
 end
 
 % Plot the negative predictivity rate vs. percent of confident
@@ -204,14 +208,72 @@ bestLowInd = find(aveNPR >= 0.99);
 bestLowInd = bestLowInd(end);
 bestLowThresh = lowThreshRange(bestLowInd);
 
+%% Use Best Thresholds to Perform Statistics for 100 Classification Models
+tow = 1e-4;       % descent step size
+epsilon = 1e-7;   % threshold for convergance
+aveIter = 10;    % number of iterations to average results
 
+accurLog = zeros(aveIter, 1);
+pprLog = zeros(aveIter, 1);
+nprLog = zeros(aveIter, 1);
+senseLog = zeros(aveIter, 1);
+specLog = zeros(aveIter, 1);
+classPerc = zeros(aveIter, 1);
 
-
+for aveInd = 1:aveIter
+    % randomly select training and validation set
+    [train, hold, val] = trainholdval(X, 400, 0);
+    
+    % initialize weights
+    wprev = zeros(size(X,2),1);
+    
+    % update weights by SGD (increased iterations from 10000 to 100000)
+    for i = 1:100000
+        % select random index, ik, for SGD
+        ind = randperm(length(train),1);
+        ik = train(ind);
+        
+        grad = (logsig(X(ik,:)*wprev) - y(ik)) * X(ik,:);
+        wnxt = wprev - tow*grad';
+        
+        % check for convergence
+        if norm(wnxt-wprev) < epsilon
+            break
+        else
+            wprev=wnxt;
+        end
+    end
+    
+    % check and display warning if solution never converged
+    if wnxt == wprev
+        'Warning: Gradient did not converge'
+    end
+    w = wnxt;
+    
+    yhatLog = logsig(X(val,:)*w);
+    
+    yVal = y(val);
+    [ypredict, yVal] = logclassify(bestUpThresh, bestLowThresh, yhatLog, yVal);
+    
+    % return the TP, TN, FP, and FN based on results
+    [TP TN FP FN] = analysis(yVal, ypredict, 1, 0);
+    
+    accurLog(aveInd) = (TP + TN) / (TP + TN + FP + FN);
+    nprLog(aveInd) = TN / (TN + FN);
+    pprLog(aveInd) = TP / (TP + FP);
+    senseLog(aveInd) = TP / (TP + FN);
+    specLog(aveInd) = TN / (TN + FP);
+    classPerc(aveInd) = length(ypredict)/length(y(val));
+    
+end
 
 % Logistic Regression for best thresholds
-% ['Accuracy Logistic = ' num2str(accurLog)]
-% ['Sensitivity Logistic = ' num2str(senseLog)]
-% ['Specificity Logistic = ' num2str(specLog)]
+['Accuracy Logistic = ' num2str(mean(accurLog))]
+['Sensitivity Logistic = ' num2str(mean(senseLog))]
+['Specificity Logistic = ' num2str(mean(specLog))]
+['PPR Logistic = ' num2str(mean(pprLog))]
+['NPR Logistic = ' num2str(mean(nprLog))]
+
 figure();
 plot(sort(yhatLog))
 xlabel('');
