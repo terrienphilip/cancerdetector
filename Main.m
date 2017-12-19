@@ -21,7 +21,7 @@ X = [ones(size(X,1),1), X];
 tow = 1e-4;       % descent step size
 lamda = 0.1;    % regularization factor
 epsilon = 1e-6; % threshold for convergance
-aveIter = 100;    % number of iterations to average results
+aveIter = 1000;    % number of iterations to average results
 
 % placeholders for average accuracy, sensitivity, and specificity
 accurLin = zeros(1,aveIter);
@@ -90,7 +90,7 @@ y(y==-1) = 0;
 %% Learn the Best Thresholds
 tow = 1e-4;       % descent step size
 epsilon = 1e-7;   % threshold for convergance
-aveIter = 10;    % number of iterations to average results
+aveIter = 1000;    % number of iterations to average results
 
 % place holders for stats and percent of confident classifications of lower
 % threshold
@@ -176,22 +176,32 @@ end
 % Plot the negative predictivity rate vs. percent of confident
 % classifications
 aveNPR = mean(npr,1);
-aveClassPercLow = mean(classPercLow,1);
+aveNPR(isnan(aveNPR)) = 1;
+aveNPR = aveNPR*100;
+aveClassPercLow = mean(classPercLow,1)*100;
 figure();
 plot(aveClassPercLow, aveNPR);
-xlabel('Percent Classified from Benign Classifications in Validation Set');
-xlim([0,1]);
+set(gca,'FontSize',20);
+xlabel('% Classified from Benign Classifications in Validation Set');
+xlim([0,100]);
+ylim([96,100]);
 ylabel('Negative Predictive Rate');
+title('NPR vs. % Classified from Benign Classification in Validation Set');
 
 % Plot the positive predictive rate vs. number of confident
 % classifications
 avePPR = mean(ppr,1);
-aveClassPercUp = mean(classPercUp,1);
+avePPR(isnan(avePPR)) = 1;
+avePPR = avePPR*100;
+aveClassPercUp = mean(classPercUp,1)*100;
 figure();
 plot(aveClassPercUp, avePPR);
-xlabel('Percent Classified from Malignant Classifications in Validation Set');
-xlim([0,1]);
+set(gca,'FontSize',20);
+xlabel('% Classified from Malignant Classifications in Validation Set');
+xlim([0,100]);
+ylim([96,100]);
 ylabel('Positive Predictive Rate');
+title('PPR vs. % Classified from Malignant Classifications in Validation Set');
 
 % Find the best thresholds where classifications are max and 99% predictive
 % rate is passed
@@ -211,7 +221,7 @@ bestLowThresh = lowThreshRange(bestLowInd);
 %% Use Best Thresholds to Perform Statistics for 100 Classification Models
 tow = 1e-4;       % descent step size
 epsilon = 1e-7;   % threshold for convergance
-aveIter = 10;    % number of iterations to average results
+aveIter = 1000;    % number of iterations to average results
 
 accurLog = zeros(aveIter, 1);
 pprLog = zeros(aveIter, 1);
@@ -253,7 +263,7 @@ for aveInd = 1:aveIter
     yhatLog = logsig(X(val,:)*w);
     
     yVal = y(val);
-    [ypredict, yVal] = logclassify(bestUpThresh, bestLowThresh, yhatLog, yVal);
+    [ypredict, yVal] = logclassify(0.5, 0.5, yhatLog, yVal);
     
     % return the TP, TN, FP, and FN based on results
     [TP TN FP FN] = analysis(yVal, ypredict, 1, 0);
@@ -273,7 +283,10 @@ end
 ['Specificity Logistic = ' num2str(mean(specLog))]
 ['PPR Logistic = ' num2str(mean(pprLog))]
 ['NPR Logistic = ' num2str(mean(nprLog))]
+['Percent Classified of the Validation Set = ' num2str(mean(classPerc))]
 
 figure();
 plot(sort(yhatLog))
-xlabel('');
+xlabel('YHat', 'FontSize', 20);
+ylabel('Probability', 'FontSize', 20);
+title('Sigmoid Graph for YHat', 'FontSize', 20);
