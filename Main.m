@@ -218,7 +218,7 @@ bestLowInd = find(aveNPR >= 0.99);
 bestLowInd = bestLowInd(end);
 bestLowThresh = lowThreshRange(bestLowInd);
 
-%% Use Best Thresholds to Perform Statistics for 100 Classification Models
+%% Use Best Thresholds to Perform Statistics for 1000 Classification Models
 tow = 1e-4;       % descent step size
 epsilon = 1e-7;   % threshold for convergance
 aveIter = 1000;    % number of iterations to average results
